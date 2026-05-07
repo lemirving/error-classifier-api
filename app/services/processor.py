@@ -6,7 +6,8 @@ IA_SERVICE_URL = os.getenv("IA_SERVICE_URL");
 
 # Inicializa a ferramenta uma única vez no carregamento do módulo
 async def processar_texto_completo(texto: str):
-    tool = language_tool_python.LanguageTool('pt-BR')
+    
+    tool = language_tool_python.LanguageTool('pt-BR', remote_server='https://api.languagetool.org/')
     matches = tool.check(texto)
     duplas_para_ia = []
     
