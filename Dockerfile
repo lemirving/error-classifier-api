@@ -23,4 +23,5 @@ COPY . .
 EXPOSE 8000
 
 # Comando para iniciar
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# No Dockerfile, altere o CMD para:
+CMD ["sh", "-c", "export _JAVA_OPTIONS='-Xmx256m' && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

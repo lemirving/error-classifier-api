@@ -5,8 +5,8 @@ import httpx  # Recomendado para chamar a sua API de IA
 IA_SERVICE_URL = os.getenv("IA_SERVICE_URL");
 
 # Inicializa a ferramenta uma única vez no carregamento do módulo
-tool = language_tool_python.LanguageTool('pt-BR')
 async def processar_texto_completo(texto: str):
+    tool = language_tool_python.LanguageTool('pt-BR')
     matches = tool.check(texto)
     duplas_para_ia = []
     
