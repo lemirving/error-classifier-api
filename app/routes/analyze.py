@@ -1,45 +1,20 @@
+from fastapi import APIRouter, Depends
+from app.database import supabase
+from app.services.auth import get_current_user
+from app.services.processor import processar_texto_completo
+from app.services.schemas import AnalysisRequest, AnalysisResponse # Importei o Response aqui
 
-from fastapi import APIRouter
-from database import supabase  # <--- AQUI você chama o banco!
-from textProcessing.processor import processar_teste_manual, tool
-from textProcessing.schemas import AnalysisRequest 
+analyze_router = APIRouter(tags=["analyze"])
 
-classify_router = APIRouter(prefix="/classify", tags=["classify"])
-
-@classify_router.get("/")
-async def classify():
-    """
-    Essa é a rota de classificação e tratamento de textos padrão
-    Toda requisição aqui precias de autenticação
-    Returns:
-        _type_: _description_
-    """
-    return {"mensagem" : "Voce acessou /classify"}
+# 1. Mudamos para POST
+# 2. Adicionamos o response_model para o FastAPI validar a saída automaticamente
+@analyze_router.post("/analyze", response_model=AnalysisResponse)
+async def process(request: AnalysisRequest):
+    # O processor vai lá no Hugging Face e traz a lista de dicionários
+    resultado_ia = await processar_texto_completo(request.text)
     
-    
-    
-    
-#apenas pra testar conexão e correção de textos enviados
-# @classify_router.post("/test-corrector")
-# async def rota_de_teste(request: AnalysisRequest):
-#     # Chama a função que está no seu arquivo processor.py
-#     dados_processados = processar_teste_manual(request.text)
-    
-#     return {
-#         "student_id": request.student_id,
-#         "erros": dados_processados
-#     }
-
-
-
-#Apenas pra testar conexão com supabase
-# @classify_router.get("/test-db")
-# async def test_connection():
-#     # Tenta buscar algo simples só para ver se conecta
-#     try:
-#         response = supabase.table("author").select("*").limit(10).execute()
-#         return {"status": "Conectado!", "data": response.data}
-#     except Exception as e:
-#         return {"status": "Erro", "details": str(e)}
-
-
+    # Retorna o dicionário exatamente no formato que o AnalysisResponse exige
+    return {
+        "student_id": request.student_id,
+        "error_list": resultado_ia
+    }

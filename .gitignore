@@ -9,6 +9,3 @@ __pycache__/
 # NLTK Data (Não precisa subir, o servidor baixa depois)
 nltk_data/
 
-# Modelo de IA (se os arquivos forem muito grandes, >100MB)
-# Se forem pequenos, pode subir. Se forem grandes, use Git LFS.
-# models/error-classifier/weights.bin

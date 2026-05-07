@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from jose import jwt
 
 
+#conecta com o banco de dados do supabase
+# uma forma de restringirmos o uso dessa api apenas aos usuários
+
 load_dotenv()
 
 url: str = os.getenv("SUPABASE_URL")
