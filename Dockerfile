@@ -1,26 +1,26 @@
 # Usamos uma imagem leve do Python
 FROM python:3.11-slim
 
-# Definimos a pasta de trabalho dentro do container
+# Definimos a pasta de trabalho
 WORKDIR /app
 
-# Instala o Java (JRE) para o LanguageTool rodar localmente sem limites
+# Instala o Java (JRE) - Necessário para o LanguageTool
 RUN apt-get update && apt-get install -y --no-install-recommends \
     default-jre \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia o arquivo de dependências primeiro (para aproveitar o cache do Docker)
+# Copia o requirements e instala as bibliotecas
 COPY requirements.txt .
-
-# Instala as bibliotecas do Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia todo o resto do seu código (a pasta app, rotas, etc) para dentro do container
+
+RUN python -c "import language_tool_python; language_tool_python.LanguageTool('pt-BR')"
+
+# Copia o restante do código
 COPY . .
 
-# Expõe a porta padrão da API
+# Expõe a porta
 EXPOSE 8000
 
-# O comando exato que acabamos de usar no terminal para ligar o Uvicorn, 
-# mas escutando em todos os IPs (0.0.0.0) para a internet conseguir acessar
+# Comando para iniciar
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
