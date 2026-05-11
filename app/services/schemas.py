@@ -17,5 +17,5 @@ class AnalysisResponse(BaseModel):
 
 # 3. O contrato de Entrada (o que o site envia)
 class AnalysisRequest(BaseModel):
-    student_id: str
+    text_id: str
     text: str
