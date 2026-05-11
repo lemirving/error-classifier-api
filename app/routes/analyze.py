@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from app.database import supabase
 from app.services.auth import get_current_user
 from app.services.processor import processar_texto_completo
