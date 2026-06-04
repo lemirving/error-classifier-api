@@ -18,8 +18,10 @@ async def processar_texto_completo(texto: str):
         duplas_para_ia = []
         for match in matches:
             if match.replacements:
-                # Use match.length (mais seguro que error_length em algumas versões)
-                incorreta = texto[match.offset : match.offset + match.length]
+                # O ajuste seguro está aqui: tenta pegar errorLength, se não existir, usa length
+                length = getattr(match, 'errorLength', getattr(match, 'length', 0))
+                
+                incorreta = texto[match.offset : match.offset + length]
                 correta = match.replacements[0]
                 duplas_para_ia.append({"errada": incorreta, "correta": correta})
 
