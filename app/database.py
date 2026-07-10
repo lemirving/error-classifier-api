@@ -1,31 +1,17 @@
 import os
-from supabase import create_client, Client
-from dotenv import load_dotenv
-from jose import jwt
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+# from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.orm import sessionmaker
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-#conecta com o banco de dados do supabase
-# uma forma de restringirmos o uso dessa api apenas aos usuários
+# Cria o motor assíncrono que vai gerenciar a comunicação com o PostgreSQL
+engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 
-load_dotenv()
-
-url: str = os.getenv("SUPABASE_URL")
-key: str= os.getenv("SUPABASE_ANON_KEY")
-supabase: Client = create_client(url,key)
-
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
-ALGORITHM = "HS256"
-
-def validar_professor(token:str):
-    try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=[ALGORITHM],
-            audience="authenticated"
-        )
-        return payload
-    except Exception as e:
-        print(f"Erro na validação:{e}")
-        return None
-    
+# Função geradora de sessões para usarmos nas nossas rotas do FastAPI
+async def get_session() -> AsyncSession:
+    async_session = sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with async_session() as session:
+        yield session

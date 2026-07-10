@@ -1,39 +1,68 @@
-from fastapi import APIRouter, BackgroundTasks, Depends
-from app.database import supabase
-from app.services.auth import get_current_user
-from app.services.processor import processar_texto_completo
-from app.services.schemas import AnalysisRequest, AnalysisResponse # Importei o Response aqui
-from app.services.processor import task_processar_e_persistir
-analyze_router = APIRouter(tags=["analyze"])
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from uuid import UUID
+from typing import List
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-# 1. Mudamos para POST
-# 2. Adicionamos o response_model para o FastAPI validar a saída automaticamente
-# No seu arquivo /app/routes/analyze.py
+from app.database import get_session
+from app.models.text_error import TextError
+from app.routes.auth import get_current_user
+from app.services.hf_client import HuggingFaceClient
+from app.services.text_processor import TextProcessor
 
-# @analyze_router.post("/analyze")
-# async def process(request: AnalysisRequest, background_tasks: BackgroundTasks):
-#     # O ERRO ESTAVA AQUI: você provavelmente tentou usar request.student_id
-#     # mas o Pydantic só conhece o que está na classe AnalysisRequest.
-    
-#     background_tasks.add_task(task_processar_e_persistir, request.text_id, request.text)
-    
-#     return {
-#         "status": "processing",
-#         "text_id": request.text_id  # Mude de student_id para text_id
-#     }
+router = APIRouter(prefix="/analyze", tags=["Análise"])
+hf_client = HuggingFaceClient()
 
+class AnalysisRequest(BaseModel):
+    text_id: UUID
+    text: str
 
-@analyze_router.post("/analyze")
-async def process(request: AnalysisRequest):
-    # Em vez de jogar para background_tasks, nós chamamos a função e ESPERAMOS (await)
-    resultado = await processar_texto_completo(request.text)
-    
-    if resultado is None:
-        return {"status": "error", "message": "Erro ao processar"}
+text_processor = TextProcessor()
 
-    # Retorna o contrato AnalysisResponse direto na tela para o Go ler
-    return {
-        "student_id": "monitoria-k8s", # ou de onde você preferir puxar
-        "text_id": request.text_id,
-        "error_list": resultado
-    }
+@router.post("/process")
+async def processar_analise(
+    dados: AnalysisRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    try:
+
+        pares_para_ia = text_processor.extrair_pares_erros(dados.text)
+        
+        if not pares_para_ia:
+            return {
+                "status": "success", 
+                "message": "Nenhum desvio ortográfico detectado no texto.",
+                "errors_persisted_count": 0
+            }
+
+        erros_classificados = await hf_client.classificar_erros(pares_para_ia)
+
+        # persiste os dados
+        for erro in erros_classificados:
+            novo_erro_db = TextError(
+                text_id=dados.text_id,
+                word_found=erro["errada"],
+                suggestion=erro["correta"],
+                classification=erro["classe"],
+                diff=erro["diff"],
+                is_recognized=erro["reconhecida"],
+                explanation=f"A palavra '{erro['errada']}' foi classificada como um desvio de {erro['classe']}.",
+                is_corrected=False
+            )
+            session.add(novo_erro_db)
+
+        await session.commit()
+
+        return {
+            "status": "success",
+            "text_id": dados.text_id,
+            "errors_persisted_count": len(erros_classificados)
+        }
+
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro no processador ou na persistência: {str(e)}"
+        )

@@ -1,27 +1,34 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from app.routes import analyze
 
-from app.routes.analyze import analyze_router
-from app.routes.utils import utils_router
-
-app.include_router(analyze_router)
-app.include_router(utils_router)
-
-
-# Configuração do CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # No desenvolvimento, o "*" libera tudo. 
-    allow_credentials=True,
-    allow_methods=["*"], # Libera POST, GET, OPTIONS, etc.
-    allow_headers=["*"], # Libera Content-Type e outros headers
+# 1. Inicializa a aplicação FastAPI
+app = FastAPI(
+    title="Classificador de Erros API - PIBEC",
+    description="API intermediária para processamento de textos via IA e persistência direta no PostgreSQL.",
+    version="1.0.0"
 )
 
 
+origins = [
+    "http://localhost:3000",   
+    # "https://seu-site-nextjs.vercel.app", 
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,          
+    allow_credentials=True,         
+    allow_methods=["*"],           
+    allow_headers=["*"],            
+)
 
+app.include_router(analyze.router)
 
-# para rodar o código, executar uvicorn main:app --reload no terminal
+@app.get("/", tags=["Healthcheck"])
+async def root():
+    return {
+        "status": "healthy",
+        "message": "API do Classificador de Erros rodando perfeitamente."
+    }
