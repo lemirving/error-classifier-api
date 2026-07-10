@@ -2,8 +2,9 @@ import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 # from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import sessionmaker
+from app.config import settings # <-- Importa o nosso gerenciador de configs
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = settings.DATABASE_URL
 
 # Cria o motor assíncrono que vai gerenciar a comunicação com o PostgreSQL
 engine = create_async_engine(DATABASE_URL, echo=True, future=True)
